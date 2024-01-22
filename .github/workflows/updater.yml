@@ -1,0 +1,28 @@
+name: Add Stock Data
+
+on:
+  push:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  markscribe:
+    runs-on: alpine-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Get Stock Data
+        run: |
+          curl -X GET "https://en.wikipedia.org/wiki/Quotation_mark" -o output_file.txt
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Add Stock Data
+          branch: master
+          commit_user_name: Stock Data
+          commit_user_email: stock-data@thecaliskan.com
+          commit_author: Stock Data 🤖 <stock-data@thecaliskan.com>
