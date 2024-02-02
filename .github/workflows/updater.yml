@@ -1,13 +1,18 @@
-name: Add Stock Data
+name: Add Data
 
 on:
   push:
+  workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 4 * * *"
+
+env:
+  POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+  DATE: $(date -d '-1 day' +'%Y-%m-%d')
 
 jobs:
-  markscribe:
-    runs-on: alpine-latest
+  data:
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
@@ -16,13 +21,27 @@ jobs:
       - uses: actions/checkout@master
 
       - name: Get Stock Data
+#        if: ${{ ! -s stock/${{ env.DATE }}.json }}
         run: |
-          curl -X GET "https://en.wikipedia.org/wiki/Quotation_mark" -o output_file.txt
+          response=$(curl -s -X GET "https://api.polygon.io/v2/aggs/grouped/locale/us/market/stocks/${{ env.DATE }}?adjusted=true&apiKey=${{ env.POLYGON_API_KEY }}")
+          [[ "$(echo $response | jq '.["status"]')" == "\"OK\"" ]] && echo $response > stock/${{ env.DATE }}.json && jq ".stock = \"${{ env.DATE }}\"" <<<$(cat latest.json) >latest.json
+
+      - name: Get Forex Data
+#        if: ${{ ! -s forex/${{ env.DATE }}.json }}
+        run: |
+          response=$(curl -s -X GET "https://api.polygon.io/v2/aggs/grouped/locale/global/market/fx/${{ env.DATE }}?adjusted=true&apiKey=${{ env.POLYGON_API_KEY }}")
+          [[ "$(echo $response | jq '.["status"]')" == "\"OK\"" ]] && echo $response > forex/${{ env.DATE }}.json && jq ".forex = \"${{ env.DATE }}\"" <<<$(cat latest.json) >latest.json
+
+      - name: Get Crypto Data
+#        if: ${{ ! -s crypto/${{ env.DATE }}.json }}
+        run: |
+          response=$(curl -s -X GET "https://api.polygon.io/v2/aggs/grouped/locale/global/market/crypto/${{ env.DATE }}?adjusted=true&apiKey=${{ env.POLYGON_API_KEY }}")
+          [[ "$(echo $response | jq '.["status"]')" == "\"OK\"" ]] && echo $response > crypto/${{ env.DATE }}.json && jq ".crypto = \"${{ env.DATE }}\"" <<<$(cat latest.json) >latest.json
 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: Add Stock Data
+          commit_message: Add Data
           branch: master
-          commit_user_name: Stock Data
-          commit_user_email: stock-data@thecaliskan.com
-          commit_author: Stock Data 🤖 <stock-data@thecaliskan.com>
+          commit_user_name: Data 🤖
+          commit_user_email: data@thecaliskan.com
+          commit_author: Data 🤖 <data@thecaliskan.com>
